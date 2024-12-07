@@ -9,12 +9,8 @@ import sublime
 import sublime_plugin
 import sys
 
-from .stringencode.escape_table import (
-    html_escape_table,
-    html5_escape_table,
-    html_reserved_list,
-    xml_escape_table
-)
+from .lib.html import entities as html_entities
+from .lib.html import unescape as html_unescape
 
 import urllib.parse
 quote_plus = urllib.parse.quote_plus
@@ -55,6 +51,9 @@ __all__ = [
     "UnicodeHexCommand",
     "HexUnicodeCommand",
 ]
+
+xml_escape_table = {"\"": "&quot;", "'": "&apos;", "<": "&lt;", ">": "&gt;" }
+
 
 def pad64(value):
     mod = len(value) % 4
@@ -188,77 +187,44 @@ class CssUnescapeCommand(StringEncode):
 class HtmlEntitizeCommand(StringEncode):
 
     def convert(self, text):
-        text = text.replace('&', '&amp;')
-        for k in html_escape_table:
-            v = html_escape_table[k]
-            text = text.replace(k, v)
         ret = ''
-        for i, c in enumerate(text):
-            if ord(c) > 127:
-                ret += hex(ord(c)).replace('0x', '&#x') + ';'
-            else:
-                ret += c
+        for char in text:
+            if char in html_entities:
+                ret += html_entities[char]
+                continue
+            if char > '\x7f':
+                ret += '&#x' + hex(ord(char))[2:] + ';'
+                continue
+            ret += char
         return ret
 
 
 class HtmlDeentitizeCommand(StringEncode):
 
     def convert(self, text):
-        for k in html_escape_table:
-            v = html_escape_table[k]
-            text = text.replace(v, k)
-        for k in html5_escape_table:
-            v = html5_escape_table[k]
-            text = text.replace(v, k)
-        while re.search(r'&#[xX][a-fA-F0-9]+;', text):
-            match = re.search(r'&#[xX]([a-fA-F0-9]+);', text)
-            text = text.replace(
-                match.group(0), chr(int('0x' + match.group(1), 16)))
-        while re.search(r'&#[0-9]+;', text):
-            match = re.search(r'&#([0-9]+);', text)
-            text = text.replace(
-                match.group(0), chr(int(match.group(1), 10)))
-        text = text.replace('&amp;', '&')
-        return text
+        return html_unescape(text)
 
 
 class SafeHtmlEntitizeCommand(StringEncode):
 
     def convert(self, text):
-        for k in html_escape_table:
-            # skip HTML reserved characters
-            if k in html_reserved_list:
-                continue
-            v = html_escape_table[k]
-            text = text.replace(k, v)
         ret = ''
-        for i, c in enumerate(text):
-            if ord(c) > 127:
-                ret += hex(ord(c)).replace('0x', '&#x') + ';'
-            else:
-                ret += c
+        for char in text:
+            if char not in {"<", ">", "&", "'", "\""}:
+                if char in html_entities:
+                    ret += html_entities[char]
+                    continue
+                if char > '\x7f':
+                    ret += '&#x' + hex(ord(char))[2:] + ';'
+                    continue
+            ret += char
         return ret
 
 
 class SafeHtmlDeentitizeCommand(StringEncode):
 
     def convert(self, text):
-        for k in html_escape_table:
-            # skip HTML reserved characters
-            if k in html_reserved_list:
-                continue
-            v = html_escape_table[k]
-            text = text.replace(v, k)
-        while re.search(r'&#[xX][a-fA-F0-9]+;', text):
-            match = re.search(r'&#[xX]([a-fA-F0-9]+);', text)
-            text = text.replace(
-                match.group(0), chr(int('0x' + match.group(1), 16)))
-        while re.search(r'&#[0-9]+;', text):
-            match = re.search(r'&#([0-9]+);', text)
-            text = text.replace(
-                match.group(0), chr(int(match.group(1), 10)))
-        text = text.replace('&amp;', '&')
-        return text
+        return html_unescape(text, {'lt;', 'gt;', 'amp;', 'apos;', 'quot;'})
 
 
 class XmlEntitizeCommand(StringEncode):
