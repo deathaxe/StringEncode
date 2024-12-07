@@ -52,7 +52,7 @@ __all__ = [
     "HexUnicodeCommand",
 ]
 
-xml_escape_table = {"\"": "&quot;", "'": "&apos;", "<": "&lt;", ">": "&gt;" }
+xml_entities = {"\"": "&quot;", "'": "&apos;", "<": "&lt;", ">": "&gt;" }
 
 
 def pad64(value):
@@ -230,27 +230,24 @@ class SafeHtmlDeentitizeCommand(StringEncode):
 class XmlEntitizeCommand(StringEncode):
 
     def convert(self, text):
-        text = text.replace('&', '&amp;')
-        for k in xml_escape_table:
-            v = xml_escape_table[k]
-            text = text.replace(k, v)
         ret = ''
-        for i, c in enumerate(text):
-            if ord(c) > 127:
-                ret += hex(ord(c)).replace('0x', '&#x') + ';'
-            else:
-                ret += c
+        for char in text.replace('&', '&amp;'):
+            if char in xml_entities:
+                ret += xml_entities[char]
+                continue
+            if char > '\x7f':
+                ret += '&#x' + hex(ord(char))[2:] + ';'
+                continue
+            ret += char
         return ret
 
 
 class XmlDeentitizeCommand(StringEncode):
 
     def convert(self, text):
-        for k in xml_escape_table:
-            v = xml_escape_table[k]
-            text = text.replace(v, k)
-        text = text.replace('&amp;', '&')
-        return text
+        for char, entity in xml_entities.items():
+            text = text.replace(entity, char)
+        return text.replace('&amp;', '&')
 
 
 class JsonEscapeCommand(StringEncode):
