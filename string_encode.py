@@ -164,6 +164,27 @@ class UnicodeEscapeCommand(StringEncode):
         return codecs.decode(text, 'unicode-escape')
 
 
+class CssEscapeCommand(StringEncode):
+
+    def convert(self, text):
+        ret = ''
+        for char in text:
+            if char > '\x7f':
+                ret += '\\' + hex(ord(char))[2:]
+            else:
+                ret += char
+        return ret
+
+
+class CssUnescapeCommand(StringEncode):
+    regexp = re.compile(r'\\[a-fA-F0-9]{1,6}')
+
+    def convert(self, text):
+        for s in set(self.regexp.findall(text)):
+            text = text.replace(s, chr(int(s[1:], 16)))
+        return text
+
+
 class HtmlEntitizeCommand(StringEncode):
 
     def convert(self, text):
@@ -198,28 +219,6 @@ class HtmlDeentitizeCommand(StringEncode):
             text = text.replace(
                 match.group(0), chr(int(match.group(1), 10)))
         text = text.replace('&amp;', '&')
-        return text
-
-
-class CssEscapeCommand(StringEncode):
-
-    def convert(self, text):
-        ret = ''
-        for i, c in enumerate(text):
-            if ord(c) > 127:
-                ret += hex(ord(c)).replace('0x', '\\')
-            else:
-                ret += c
-        return ret
-
-
-class CssUnescapeCommand(StringEncode):
-
-    def convert(self, text):
-        while re.search(r'\\[a-fA-F0-9]+', text):
-            match = re.search(r'\\([a-fA-F0-9]+)', text)
-            text = text.replace(
-                match.group(0), chr(int('0x' + match.group(1), 16)))
         return text
 
 
