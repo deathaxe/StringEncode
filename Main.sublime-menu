@@ -21,6 +21,10 @@
                         "command": "unicode_escape"
                     },
                     {
+                        "caption": "HTML Escape",
+                        "command": "html_escape"
+                    },
+                    {
                         "caption": "HTML Entitize",
                         "command": "html_entitize"
                     },
