@@ -4,6 +4,10 @@
         "command": "string_encode_paste"
     },
     {
+        "caption": "StringEncode: HTML Escape",
+        "command": "html_escape"
+    },
+    {
         "caption": "StringEncode: HTML Entitize",
         "command": "html_entitize"
     },

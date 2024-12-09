@@ -10,6 +10,7 @@ import sublime_plugin
 import sys
 
 from .lib.html import entities as html_entities
+from .lib.html import escape as html_escape
 from .lib.html import unescape as html_unescape
 
 import urllib.parse
@@ -21,6 +22,7 @@ __all__ = [
     "Gzip64EncodeCommand",
     "Gzip64DecodeCommand",
     "UnicodeEscapeCommand",
+    "HtmlEscapeCommand",
     "HtmlEntitizeCommand",
     "HtmlDeentitizeCommand",
     "CssEscapeCommand",
@@ -67,6 +69,7 @@ def pad64(value):
 class StringEncodePaste(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
         items = [
+            ('Html Escpae', 'html_escape'),
             ('Html Entitize', 'html_entitize'),
             ('Html Deentitize', 'html_deentitize'),
             ('Unicode Escape', 'unicode_escape'),
@@ -182,6 +185,12 @@ class CssUnescapeCommand(StringEncode):
         for s in set(self.regexp.findall(text)):
             text = text.replace(s, chr(int(s[1:], 16)))
         return text
+
+
+class HtmlEscapeCommand(StringEncode):
+
+    def convert(self, text):
+        return html_escape(text)
 
 
 class HtmlEntitizeCommand(StringEncode):
