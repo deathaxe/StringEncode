@@ -8,14 +8,12 @@ import re
 import sublime
 import sublime_plugin
 import sys
+from urllib.parse import quote_plus
+from urllib.parse import unquote_plus
 
 from .lib.html import entities as html_entities
 from .lib.html import escape as html_escape
 from .lib.html import unescape as html_unescape
-
-import urllib.parse
-quote_plus = urllib.parse.quote_plus
-unquote_plus = urllib.parse.unquote_plus
 
 __all__ = [
     "StringEncodePaste",
