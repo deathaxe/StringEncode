@@ -123,7 +123,7 @@ class StringEncode(sublime_plugin.TextCommand):
         if kwargs.get('source') == 'clipboard':
             del kwargs['source']
             text = sublime.get_clipboard()
-            replacement = self.encode(text, **kwargs)
+            replacement = self.convert(text, **kwargs)
             for region in regions:
                 if region.empty():
                     self.view.insert(edit, region.begin(), replacement)
@@ -139,31 +139,34 @@ class StringEncode(sublime_plugin.TextCommand):
             regions = [sublime.Region(0, self.view.size())]
         for region in regions:
             text = self.view.substr(region)
-            replacement = self.encode(text, **kwargs)
+            replacement = self.convert(text, **kwargs)
             self.view.replace(edit, region, replacement)
+
+    def convert(self, text):
+        return text
 
 
 class Gzip64EncodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return str(base64.b64encode(gzip.compress(bytes(text, 'utf-8'))), 'ascii')
 
 
 class Gzip64DecodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return str(gzip.decompress(base64.b64decode(pad64(text))), 'utf-8')
 
 
 class UnicodeEscapeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return codecs.decode(text, 'unicode-escape')
 
 
 class HtmlEntitizeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         text = text.replace('&', '&amp;')
         for k in html_escape_table:
             v = html_escape_table[k]
@@ -179,7 +182,7 @@ class HtmlEntitizeCommand(StringEncode):
 
 class HtmlDeentitizeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         for k in html_escape_table:
             v = html_escape_table[k]
             text = text.replace(v, k)
@@ -200,7 +203,7 @@ class HtmlDeentitizeCommand(StringEncode):
 
 class CssEscapeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         ret = ''
         for i, c in enumerate(text):
             if ord(c) > 127:
@@ -212,7 +215,7 @@ class CssEscapeCommand(StringEncode):
 
 class CssUnescapeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         while re.search(r'\\[a-fA-F0-9]+', text):
             match = re.search(r'\\([a-fA-F0-9]+)', text)
             text = text.replace(
@@ -222,7 +225,7 @@ class CssUnescapeCommand(StringEncode):
 
 class SafeHtmlEntitizeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         for k in html_escape_table:
             # skip HTML reserved characters
             if k in html_reserved_list:
@@ -240,7 +243,7 @@ class SafeHtmlEntitizeCommand(StringEncode):
 
 class SafeHtmlDeentitizeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         for k in html_escape_table:
             # skip HTML reserved characters
             if k in html_reserved_list:
@@ -261,7 +264,7 @@ class SafeHtmlDeentitizeCommand(StringEncode):
 
 class XmlEntitizeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         text = text.replace('&', '&amp;')
         for k in xml_escape_table:
             v = xml_escape_table[k]
@@ -277,7 +280,7 @@ class XmlEntitizeCommand(StringEncode):
 
 class XmlDeentitizeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         for k in xml_escape_table:
             v = xml_escape_table[k]
             text = text.replace(v, k)
@@ -287,23 +290,23 @@ class XmlDeentitizeCommand(StringEncode):
 
 class JsonEscapeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return json.dumps(text)
 
 
 class JsonUnescapeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         if text[:1] == "'" and text[-1:] == "'":
-            return self.encode(text[1:-1])
+            return self.convert(text[1:-1])
         if text[:1] != '"' and text[-1:] != '"':
-            return self.encode('"' + text.replace('"', '\\"') + '"')
+            return self.convert('"' + text.replace('"', '\\"') + '"')
         return json.loads(text)
 
 
 class UrlEncodeCommand(StringEncode):
 
-    def encode(self, text, old_school=True):
+    def convert(self, text, old_school=True):
         quoted = quote_plus(text)
         if old_school:
             return quoted.replace("+", "%20")
@@ -312,105 +315,105 @@ class UrlEncodeCommand(StringEncode):
 
 class UrlDecodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return unquote_plus(text)
 
 
 class Base16EncodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return str(base64.b16encode(bytes(text, 'utf-8')), 'ascii')
 
 
 class Base16DecodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return str(base64.b16decode(text), 'utf-8')
 
 
 class Base32EncodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return str(base64.b32encode(bytes(text, 'utf-8')), 'ascii')
 
 
 class Base32DecodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return str(base64.b32decode(text), 'utf-8')
 
 
 class Base64EncodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return str(base64.b64encode(bytes(text, 'utf-8')), 'ascii')
 
 
 class Base64DecodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return str(base64.b64decode(pad64(text)), 'utf-8')
 
 
 class Md5EncodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return hashlib.md5(bytes(text, 'utf-8')).hexdigest()
 
 
 class Sha1EncodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return hashlib.sha1(bytes(text, 'utf-8')).hexdigest()
 
 
 class Sha256EncodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return hashlib.sha256(bytes(text, 'utf-8')).hexdigest()
 
 
 class Sha384EncodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return hashlib.sha384(bytes(text, 'utf-8')).hexdigest()
 
 
 class Sha512EncodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return hashlib.sha512(bytes(text, 'utf-8')).hexdigest()
 
 
 class EscapeRegexCommand(StringEncode):
     regex = re.compile(r'(?<!\\)([?\\*.+^$()\[\]\{\}\|])')
 
-    def encode(self, text):
+    def convert(self, text):
         return self.regex.sub(r'\\\1', text)
 
 
 class EscapeLikeCommand(StringEncode):
     regex = re.compile(r'(?<!\\)([%_])')
 
-    def encode(self, text):
+    def convert(self, text):
         return self.regex.sub(r'\\\1', text)
 
 
 class HexDecCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return str(int(text, 16))
 
 
 class DecHexCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         return hex(int(text))
 
 
 class UnicodeHexCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         hex_text = u''
         text_bytes = bytes(text, 'utf-16')
 
@@ -456,7 +459,7 @@ class UnicodeHexCommand(StringEncode):
 
 class HexUnicodeCommand(StringEncode):
 
-    def encode(self, text):
+    def convert(self, text):
         uni_text = text
 
         endian = sys.byteorder
