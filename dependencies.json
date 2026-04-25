@@ -1,0 +1,7 @@
+{
+	"*": {
+		"*": [
+			"charset_normalizer"
+		]
+	}
+}

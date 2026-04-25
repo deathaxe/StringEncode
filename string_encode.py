@@ -11,6 +11,11 @@ import sys
 from urllib.parse import quote_plus
 from urllib.parse import unquote_plus
 
+try:
+    from charset_normalizer import from_bytes as charset_from_bytes
+except:
+    charset_from_bytes = None
+
 from .lib.html import entities as html_entities
 from .lib.html import escape as html_escape
 from .lib.html import unescape as html_unescape
@@ -62,6 +67,19 @@ def pad64(value):
     elif mod == 2:
         return value + '=='
     return value
+
+
+def to_str(value, encoding=None):
+    if encoding is None:
+        if charset_from_bytes is not None:
+            charset_match = charset_from_bytes(value).best()
+            encoding = charset_match.encoding
+            if charset_match.bom and encoding == 'utf_8':
+                encoding += '_sig'
+        else:
+            encoding = 'utf_8'
+
+    return str(value, encoding)
 
 
 class StringEncodePaste(sublime_plugin.WindowCommand):
@@ -149,13 +167,13 @@ class StringEncode(sublime_plugin.TextCommand):
 class Gzip64EncodeCommand(StringEncode):
 
     def convert(self, text):
-        return str(base64.b64encode(gzip.compress(bytes(text, 'utf-8'))), 'ascii')
+        return to_str(base64.b64encode(gzip.compress(bytes(text, 'utf-8'))), 'ascii')
 
 
 class Gzip64DecodeCommand(StringEncode):
 
     def convert(self, text):
-        return str(gzip.decompress(base64.b64decode(pad64(text))), 'utf-8')
+        return to_str(gzip.decompress(base64.b64decode(pad64(text))))
 
 
 class UnicodeEscapeCommand(StringEncode):
@@ -291,37 +309,37 @@ class UrlDecodeCommand(StringEncode):
 class Base16EncodeCommand(StringEncode):
 
     def convert(self, text):
-        return str(base64.b16encode(bytes(text, 'utf-8')), 'ascii')
+        return to_str(base64.b16encode(bytes(text, 'utf-8')), 'ascii')
 
 
 class Base16DecodeCommand(StringEncode):
 
     def convert(self, text):
-        return str(base64.b16decode(text), 'utf-8')
+        return to_str(base64.b16decode(text))
 
 
 class Base32EncodeCommand(StringEncode):
 
     def convert(self, text):
-        return str(base64.b32encode(bytes(text, 'utf-8')), 'ascii')
+        return to_str(base64.b32encode(bytes(text, 'utf-8')), 'ascii')
 
 
 class Base32DecodeCommand(StringEncode):
 
     def convert(self, text):
-        return str(base64.b32decode(text), 'utf-8')
+        return to_str(base64.b32decode(text))
 
 
 class Base64EncodeCommand(StringEncode):
 
     def convert(self, text):
-        return str(base64.b64encode(bytes(text, 'utf-8')), 'ascii')
+        return to_str(base64.b64encode(bytes(text, 'utf-8')), 'ascii')
 
 
 class Base64DecodeCommand(StringEncode):
 
     def convert(self, text):
-        return str(base64.b64decode(pad64(text)), 'utf-8')
+        return to_str(base64.b64decode(pad64(text)))
 
 
 class Md5EncodeCommand(StringEncode):
